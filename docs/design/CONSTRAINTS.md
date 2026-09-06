@@ -2,7 +2,7 @@
 
 ## Primary constraint
 
-Nodes communicate only over impossible-wire, storage is still append-only, there is no global clock, and any node may crash at any time.
+Nodes communicate only over distrans, storage is still append-only, there is no global clock, and any node may crash at any time.
 
 ## What it forces
 
