@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 phase: 7
 ---
 
@@ -9,3 +9,9 @@ phase: 7
 - `crates/raft`: the four Raft messages (RequestVote, VoteResponse, AppendEntries, AppendResponse), a hand-written binary codec carried inside distrans `frame` frames (so corruption is rejected by distrans's CRC before consensus ever sees it). Decoding arbitrary bytes never panics.
 - A `Storage` trait for a node's persistent state (current term, vote, log) with an in-memory implementation (survives a simulated crash) and a real `sietch::Store`-backed implementation (survives a real close/reopen, including a torn tail).
 - Property tests: message round trip; garbage never panics; both storages agree with a reference model under arbitrary append/truncate/vote sequences.
+
+## Done
+- [x] Message codec over distrans frames; garbage never panics
+- [x] Storage trait, MemStorage, SietchStorage (real reopen)
+- [x] Property tests; mutation-checked
+- [x] ADR-001
