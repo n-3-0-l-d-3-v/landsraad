@@ -48,6 +48,22 @@ fn a_clean_cluster_elects_a_leader_and_commits_client_commands() {
 }
 
 #[test]
+fn a_round_trip_over_one_tick_links_takes_exactly_two_ticks() {
+    // Regression: replies sent while handling an arrival used to be stamped
+    // with a stale link clock and could arrive in the same tick.
+    let mut c = Cluster::new(ClusterConfig::new(3, 9));
+    let leader = wait_for_leader(&mut c, 1000);
+    c.run(200).unwrap();
+    let (l, idx) = c.propose(b"x".to_vec()).unwrap();
+    assert_eq!(l, leader);
+    let t0 = c.now();
+    while c.node(l).unwrap().commit_index() < idx {
+        c.step().unwrap();
+    }
+    assert_eq!(c.now() - t0, 2, "one tick out, one tick back");
+}
+
+#[test]
 fn the_same_seed_reproduces_the_same_run() {
     let run = || {
         let mut cfg = ClusterConfig::new(5, 42);

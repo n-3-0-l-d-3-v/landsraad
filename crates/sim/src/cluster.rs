@@ -321,32 +321,35 @@ impl Cluster {
             }
         }
 
-        // Deliver everything that arrives this tick.
+        // Advance every link's clock to `now` *before* handling anything, so
+        // a reply sent while handling an arrival is stamped with the current
+        // tick, not a stale one (otherwise a 1-tick link could deliver a reply
+        // within the same tick it was sent).
+        let mut arrivals = Vec::new();
         for from in 0..n {
             for to in 0..n {
-                if from == to {
-                    continue;
-                }
-                for datagram in self.links[from * n + to].advance(Tick(now)) {
-                    if self.nodes[to].is_none() {
-                        self.stats.dropped_to_crashed_node += 1;
-                        continue;
-                    }
-                    let msg = match decode_message(&datagram) {
-                        Ok(m) => m,
-                        Err(_) => {
-                            self.stats.rejected_by_codec += 1;
-                            continue;
-                        }
-                    };
-                    self.stats.delivered += 1;
-                    let out = self.nodes[to].as_mut().unwrap().handle(now, from, msg);
-                    if self.rng.chance(f.crash_after_event) {
-                        self.crash(to);
-                    } else {
-                        self.route(to, out);
+                if from != to {
+                    for d in self.links[from * n + to].advance(Tick(now)) {
+                        arrivals.push((from, to, d));
                     }
                 }
+            }
+        }
+        for (from, to, datagram) in arrivals {
+            if self.nodes[to].is_none() {
+                self.stats.dropped_to_crashed_node += 1;
+                continue;
+            }
+            let Ok(msg) = decode_message(&datagram) else {
+                self.stats.rejected_by_codec += 1;
+                continue;
+            };
+            self.stats.delivered += 1;
+            let out = self.nodes[to].as_mut().unwrap().handle(now, from, msg);
+            if self.rng.chance(f.crash_after_event) {
+                self.crash(to);
+            } else {
+                self.route(to, out);
             }
         }
 
