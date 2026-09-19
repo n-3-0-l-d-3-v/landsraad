@@ -1,0 +1,11 @@
+[package]
+name = "kv"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+raft = { path = "../raft" }
+
+[dev-dependencies]
+proptest.workspace = true
