@@ -25,3 +25,5 @@ The last two are honest gaps in *randomized* search, not in coverage overall: bo
 
 ## Limitations
 Storage in the simulator is in-memory (real-disk crash recovery is ticket 004). No Byzantine faults. The checker observes committed state through node commit indices, so it can only judge what nodes report.
+
+**Update (ADR-005):** a 1,500-run churn hunt later caught the unpersisted-vote bug (seed 823); the Figure 8 bug remains uncaught by random search.

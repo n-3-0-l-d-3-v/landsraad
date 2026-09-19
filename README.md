@@ -13,7 +13,25 @@ repo commit-for-commit.
 
 ## Status
 
-**Phase 7 — QUEUED**
+**Phase 7 — COMPLETE.** A Raft-style consensus stack in virtual time, over
+distrans's hostile channel, persisted on sietch:
+- `raft`: message codec inside distrans frames (garbage never panics), a
+  `Storage` trait with in-memory and real sietch implementations, and a
+  deterministic I/O-free `Node` (elections, replication, Figure 8 commit rule).
+- `sim`: a cluster of nodes over per-link distrans channels with partitions and
+  crash/restart (including crash after persisting, before sending), plus a
+  checker for election safety, log matching, leader completeness, state-machine
+  safety and durability, run every tick.
+- `kv`: a replicated key-value state machine, differentially tested.
+- `landsraad-chaos`: reproducible randomized fault schedules
+  (`cargo run --release -p sim --bin landsraad-chaos -- --runs 200`) and
+  `--measure` for latency distributions.
+
+Honest results: the checker caught 4 of 5 deliberately injected Raft bugs
+(one only at a 1,500-run budget); the fifth, Raft's Figure 8 commit bug, is
+caught by a scripted test but not by random search. Measuring exposed a real
+simulator bug (stale link clocks), now fixed. See
+[ADR-005](docs/design/decisions/ADR-005-chaos-runner-and-measurements.md).
 
 See [tickets/](tickets/) for the live phase-by-phase ticket board and
 [docs/design/](docs/design/) for constraints, invariants and architecture
