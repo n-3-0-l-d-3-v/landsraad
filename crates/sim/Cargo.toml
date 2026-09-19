@@ -1,0 +1,13 @@
+[package]
+name = "sim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+raft = { path = "../raft" }
+channel.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
