@@ -189,6 +189,42 @@ fn hostile_runs_still_make_progress_so_the_safety_checks_are_not_vacuous() {
     assert!(total_terms >= 8);
 }
 
+/// Short election timeouts, frequent crashes (including right after a vote is
+/// granted, before the reply is sent) and partitions, lots of proposals, many
+/// seeds: the interleavings that expose unpersisted votes and the "commit an
+/// older-term entry by counting" bug of Raft's Figure 8.
+#[test]
+fn heavy_churn_across_many_seeds_never_violates_safety() {
+    let mut commits = 0;
+    for seed in 0..100u64 {
+        let mut cfg = ClusterConfig::new(if seed % 3 == 0 { 5 } else { 3 }, seed);
+        cfg.election_timeout = (20, 45);
+        cfg.heartbeat_interval = 6;
+        cfg.profile = FaultProfile {
+            loss: 0.15,
+            duplication: 0.1,
+            reorder_max_delay: 12,
+            corruption: 0.02,
+            truncation: 0.02,
+            base_delay: 1,
+        };
+        cfg.faults = Faults {
+            crash: 0.01,
+            restart: 0.06,
+            partition: 0.02,
+            heal: 0.05,
+            crash_after_event: 0.01,
+            propose: 0.2,
+        };
+        let mut c = Cluster::new(cfg);
+        if let Err(v) = c.run(3000) {
+            panic!("seed {seed}: {v}");
+        }
+        commits += c.committed().len();
+    }
+    assert!(commits > 300, "commits: {commits}");
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(48))]
 
