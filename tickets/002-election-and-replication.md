@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 phase: 7
 ---
 
@@ -10,3 +10,8 @@ phase: 7
 - Randomized election timeouts from a seeded PRNG, heartbeats, term handling, vote granting with the up-to-date-log rule, log matching with conflict truncation, commit advancement restricted to current-term entries, a no-op entry at the start of each leadership.
 - Persist-before-reply: all persistent state is saved before any message that depends on it is returned.
 - Scripted unit tests for each rule, including Raft's Figure 8 scenario.
+
+## Done
+- [x] `raft::Node` (election, replication, commit rules, no-op, hints, persist-before-reply)
+- [x] 22 scripted tests incl. Figure 8; three rules mutation-checked (one weak test found and fixed)
+- [x] ADR-002
