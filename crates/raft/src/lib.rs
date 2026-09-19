@@ -3,9 +3,11 @@
 //! node state machine. See `docs/design/decisions/`.
 
 mod message;
+mod node;
 mod storage;
 
 pub use message::{
     decode_message, encode_message, CodecError, Entry, Index, Message, NodeId, Term,
 };
+pub use node::{Config, Node, Outgoing, ProposeError, Role};
 pub use storage::{MemStorage, Persistent, SietchStorage, Storage};
