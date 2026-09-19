@@ -1,10 +1,11 @@
 # Scope — landsraad
 
-## CORE (required for this repo to be considered complete at all)
-- TODO: fill in as Phase tickets are broken down.
+## CORE
+- Raft-style leader election and log replication over distrans's hostile channel, persisted on sietch, in virtual time.
+- Safety invariants checked continuously under partitions, crashes, loss, duplication, reordering and corruption.
 
-## EXTENSION (required for full integration into the combined ecosystem)
-- TODO
+## EXTENSION
+- Replicated key-value state machine; chaos runner; measurements.
 
-## EXPERIMENT (only attempted once CORE + EXTENSION are healthy)
-- TODO
+## EXPERIMENT (only if CORE and EXTENSION are healthy)
+- Membership changes, log compaction/snapshots, linearizable reads.
