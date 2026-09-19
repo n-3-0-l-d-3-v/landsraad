@@ -14,4 +14,4 @@
 mod cluster;
 mod rng;
 
-pub use cluster::{Cluster, ClusterConfig, Faults, Stats, Violation};
+pub use cluster::{Cluster, ClusterConfig, Faults, Stats, StorageKind, Violation};

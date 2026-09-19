@@ -10,4 +10,6 @@ channel.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+kv = { path = "../kv" }
 proptest.workspace = true
+tempfile = "3"

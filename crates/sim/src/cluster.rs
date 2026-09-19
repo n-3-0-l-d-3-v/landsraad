@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use channel::{Channel, FaultProfile, Tick};
 use raft::{
     decode_message, encode_message, Config, Entry, Index, MemStorage, Node, NodeId, Outgoing,
-    ProposeError, Role, Term,
+    ProposeError, Role, SietchStorage, Storage, Term,
 };
 
 use crate::rng::Rng;
@@ -37,8 +37,19 @@ impl Faults {
     };
 }
 
+/// Where nodes keep their persistent state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StorageKind {
+    /// In memory; survives a simulated crash (fast).
+    Mem,
+    /// Real `sietch` stores under `<dir>/node<i>`; a crash drops the node
+    /// and its open store, and a restart reopens the directory from disk.
+    Sietch(std::path::PathBuf),
+}
+
 #[derive(Debug, Clone)]
 pub struct ClusterConfig {
+    pub storage: StorageKind,
     pub n: usize,
     pub seed: u64,
     pub profile: FaultProfile,
@@ -50,6 +61,7 @@ pub struct ClusterConfig {
 impl ClusterConfig {
     pub fn new(n: usize, seed: u64) -> Self {
         ClusterConfig {
+            storage: StorageKind::Mem,
             n,
             seed,
             profile: FaultProfile::CLEAN,
@@ -135,9 +147,19 @@ impl Cluster {
         let mut cfg = Config::new(i, self.cfg.n, self.cfg.seed);
         cfg.election_timeout = self.cfg.election_timeout;
         cfg.heartbeat_interval = self.cfg.heartbeat_interval;
-        self.nodes[i] = Some(Node::new(cfg, Box::new(self.disks[i].clone()), self.now));
+        let storage: Box<dyn Storage> = match &self.cfg.storage {
+            StorageKind::Mem => Box::new(self.disks[i].clone()),
+            StorageKind::Sietch(dir) => Box::new(
+                SietchStorage::open(dir.join(format!("node{i}")))
+                    .expect("fail-stop: cannot open node storage"),
+            ),
+        };
+        self.nodes[i] = Some(Node::new(cfg, storage, self.now));
     }
 
+    pub fn node_count(&self) -> usize {
+        self.cfg.n
+    }
     pub fn now(&self) -> u64 {
         self.now
     }
@@ -200,6 +222,19 @@ impl Cluster {
             return Err(self.violation(format!(
                 "node {i} lost committed entries across a crash (had commit index {c})"
             )));
+        }
+        Ok(())
+    }
+
+    /// Ends all injected chaos: no more random events, partitions healed,
+    /// every crashed node restarted. The channels keep their fault profile,
+    /// so the network stays lossy: liveness is then a statement about
+    /// recovering *despite* residual loss.
+    pub fn quiesce(&mut self) -> Result<(), Violation> {
+        self.cfg.faults = Faults::NONE;
+        self.heal();
+        for i in 0..self.cfg.n {
+            self.restart(i)?;
         }
         Ok(())
     }
