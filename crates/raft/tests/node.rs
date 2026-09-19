@@ -291,13 +291,27 @@ fn a_conflicting_suffix_is_truncated_and_replaced() {
 
 #[test]
 fn a_stale_or_duplicated_append_never_deletes_valid_entries() {
-    let (mut n, _s) = boot(1, 3);
+    let (mut n, s) = boot(1, 3);
     let full = append(1, 0, 0, vec![e(1, b"a"), e(1, b"b"), e(1, b"c")], 0);
     n.handle(1, 0, full.clone());
     // An older, shorter resend of the same prefix arrives late.
-    n.handle(2, 0, append(1, 0, 0, vec![e(1, b"a")], 0));
+    let r = only(n.handle(2, 0, append(1, 0, 0, vec![e(1, b"a")], 0)));
+    assert_eq!(
+        n.log(),
+        &[e(1, b"a"), e(1, b"b"), e(1, b"c")],
+        "the shorter resend must not truncate the longer, matching log"
+    );
+    assert_eq!(s.snapshot().log.len(), 3, "nor may storage be truncated");
+    assert!(matches!(
+        r,
+        Message::AppendResponse {
+            success: true,
+            match_index: 1,
+            ..
+        }
+    ));
     n.handle(3, 0, full);
-    assert_eq!(n.log(), &[e(1, b"a"), e(1, b"b"), e(1, b"c")]);
+    assert_eq!(n.log().len(), 3);
 }
 
 #[test]
